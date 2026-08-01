@@ -38,21 +38,33 @@ export function createDdpPackets(frame, frameNumber) {
 export class DdpSender {
   #socket;
   #frameNumber = 0;
+  #closed = false;
 
-  constructor({ port = DDP_PORT } = {}) {
+  constructor({ port = DDP_PORT, onError = () => {} } = {}) {
     this.port = port;
     this.#socket = dgram.createSocket('udp4');
+    this.#socket.on('error', onError);
+    this.onError = onError;
   }
 
   send(frame, host) {
+    if (this.#closed) throw new Error('DDP sender is closed');
     this.#frameNumber += 1;
     for (const packet of createDdpPackets(frame, this.#frameNumber)) {
-      this.#socket.send(packet, this.port, host);
+      this.#socket.send(packet, this.port, host, (error) => {
+        if (error) this.onError(error);
+      });
     }
   }
 
   close() {
-    this.#socket.close();
+    if (this.#closed) return;
+    this.#closed = true;
+    try {
+      this.#socket.close();
+    } catch (error) {
+      if (error.code !== 'ERR_SOCKET_DGRAM_NOT_RUNNING') throw error;
+    }
   }
 }
 

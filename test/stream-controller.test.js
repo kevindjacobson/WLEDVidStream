@@ -4,7 +4,7 @@ import test from 'node:test';
 import { DDP_FRAME_BYTES } from '../src/ddp.js';
 import { StreamController } from '../src/stream-controller.js';
 
-test('forwards an exact 64x64 RGB frame only after WLED is configured', () => {
+test('forwards the exact RGB frame size reported by WLED only after configuration', () => {
   const sent = [];
   const controller = new StreamController({
     sender: { send: (frame, host) => sent.push({ frame, host }) },
@@ -15,10 +15,16 @@ test('forwards an exact 64x64 RGB frame only after WLED is configured', () => {
     reason: 'wled-not-configured',
   });
 
-  controller.setWled({ host: '192.168.1.42', name: 'Matrix' });
-  assert.deepEqual(controller.handleFrame(Buffer.alloc(DDP_FRAME_BYTES, 7)), {
+  controller.setWled({
+    host: 'matrix.local',
+    address: '192.168.1.42',
+    name: 'Matrix',
+    matrix: { width: 2, height: 1, pixelCount: 2 },
+  });
+  assert.deepEqual(controller.handleFrame(Buffer.alloc(6, 7)), {
     accepted: true,
     frameNumber: 1,
+    matrix: { width: 2, height: 1, pixelCount: 2 },
   });
   assert.equal(controller.status().framesSent, 1);
   assert.equal(sent.length, 1);
@@ -29,11 +35,17 @@ test('rejects malformed frames without forwarding them', () => {
   const controller = new StreamController({
     sender: { send: () => assert.fail('malformed frame was forwarded') },
   });
-  controller.setWled({ host: '192.168.1.42', name: 'Matrix' });
+  controller.setWled({
+    host: '192.168.1.42',
+    name: 'Matrix',
+    matrix: { width: 2, height: 1, pixelCount: 2 },
+  });
 
   assert.deepEqual(controller.handleFrame(Buffer.alloc(100)), {
     accepted: false,
-    reason: `frame-must-be-${DDP_FRAME_BYTES}-bytes`,
+    reason: 'frame-must-be-6-bytes',
+    expectedFrameBytes: 6,
+    matrix: { width: 2, height: 1, pixelCount: 2 },
   });
   assert.equal(controller.status().framesSent, 0);
 });

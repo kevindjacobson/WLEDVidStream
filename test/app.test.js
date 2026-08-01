@@ -64,7 +64,7 @@ test('configures WLED only after inspecting the device', async () => {
       name: 'Test Matrix',
       version: '0.15.0',
       ledCount: 4_096,
-      expectedLedCount: true,
+      matrix: { width: 64, height: 64, pixelCount: 4_096 },
     }),
   });
 

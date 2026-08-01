@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createDdpPackets } from '../src/ddp.js';
+import { createDdpPackets, DdpSender } from '../src/ddp.js';
 
 test('packetizes an RGB frame with byte offsets and pushes only the final packet', () => {
   const frame = Buffer.alloc(1_500);
@@ -37,4 +37,21 @@ test('a 64x64 frame fits into Ethernet-sized DDP packets', () => {
   assert.equal(packets.length, 9);
   assert.ok(packets.every((packet) => packet.length <= 1_450));
   assert.equal(packets.at(-1)[0], 0x41);
+});
+
+test('closing an unused DDP sender is safe and idempotent', () => {
+  const sender = new DdpSender();
+
+  assert.doesNotThrow(() => sender.close());
+  assert.doesNotThrow(() => sender.close());
+});
+
+test('reports asynchronous UDP resolution errors instead of crashing', async () => {
+  const error = await new Promise((resolve) => {
+    const sender = new DdpSender({ onError: resolve });
+    sender.send(Buffer.alloc(3), '256.256.256.256');
+    setTimeout(() => sender.close(), 250);
+  });
+
+  assert.match(error.message, /ENOTFOUND|getaddrinfo/);
 });

@@ -10,6 +10,7 @@ const elements = {
   wledDot: document.querySelector('#wled-dot'),
   wledLabel: document.querySelector('#wled-label'),
   frameCount: document.querySelector('#frame-count'),
+  matrixSize: document.querySelector('#matrix-size'),
 };
 
 function setChip(kind, text) {
@@ -23,6 +24,9 @@ function renderStatus(status) {
   elements.wledDot.classList.toggle('connected', Boolean(status.wled));
   elements.wledLabel.textContent = status.wled ? status.wled.name : 'Not configured';
   elements.frameCount.textContent = Number(status.framesSent ?? 0).toLocaleString();
+  elements.matrixSize.textContent = status.wled
+    ? `${status.wled.matrix.width}×${status.wled.matrix.height}`
+    : '—';
 
   if (status.lastError) setChip('error', status.lastError);
   else if (status.phoneConnected && status.wled) setChip('live', 'Streaming live');
@@ -68,10 +72,8 @@ async function configureWled(host, announce = true) {
 
   localStorage.setItem('wled-host', result.host);
   elements.host.value = result.host;
-  elements.result.className = result.expectedLedCount ? 'form-note success' : 'form-note warning';
-  elements.result.textContent = result.expectedLedCount
-    ? `Connected to ${result.name} · ${result.ledCount.toLocaleString()} LEDs · WLED ${result.version}`
-    : `Connected to ${result.name}, but it reports ${result.ledCount.toLocaleString()} LEDs instead of 4,096.`;
+  elements.result.className = 'form-note success';
+  elements.result.textContent = `Connected to ${result.name} · ${result.matrix.width}×${result.matrix.height} logical matrix · ${result.ledCount.toLocaleString()} physical LEDs · WLED ${result.version}`;
   if (announce) setChip('ready', 'WLED connected — scan QR');
 }
 

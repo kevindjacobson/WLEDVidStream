@@ -18,9 +18,9 @@
 
     <main class="dashboard-shell">
       <section class="hero-panel">
-        <div class="eyebrow">64 × 64 LIVE CAMERA</div>
+        <div class="eyebrow">WLED / MOONMODULES LIVE CAMERA</div>
         <h1>Point your phone.<br><em>Light the matrix.</em></h1>
-        <p class="lede">Your video stays on your local network. Frames are center-cropped, downsampled to 4,096 pixels, and streamed directly to WLED over DDP.</p>
+        <p class="lede">Your video stays on your local network. The app reads your matrix dimensions from WLED, center-crops each frame to that aspect ratio, and streams it directly over DDP.</p>
 
         <form id="wled-form" class="wled-form">
           <label for="wled-host">WLED address</label>
@@ -58,7 +58,7 @@
 
         <div class="live-metrics">
           <div><span id="frame-count">0</span><small>frames sent</small></div>
-          <div><span>64²</span><small>RGB pixels</small></div>
+          <div><span id="matrix-size">—</span><small>logical matrix</small></div>
           <div><span>DDP</span><small>local UDP</small></div>
         </div>
 
@@ -73,7 +73,7 @@
     <footer>
       <span>Local-only stream</span>
       <span>•</span>
-      <span>Centered crop — never stretched</span>
+      <span>WLED-sized crop — never stretched</span>
     </footer>
   </body>
 </html>

@@ -1,6 +1,5 @@
-import { getCoverCrop, rgbaToRgb } from './frame.js';
+import { canvasToRgb, getCoverCrop } from './frame.js';
 
-const FRAME_SIZE = 64;
 const token = new URLSearchParams(location.search).get('token');
 const elements = {
   video: document.querySelector('#camera'),
@@ -27,6 +26,23 @@ let facingMode = 'environment';
 let sentFrames = 0;
 let lastSentAt = 0;
 let wakeLock = null;
+let frameWidth = 64;
+let frameHeight = 64;
+
+function configureMatrix(matrix) {
+  if (!matrix?.width || !matrix?.height) return;
+  frameWidth = matrix.width;
+  frameHeight = matrix.height;
+  elements.canvas.width = frameWidth;
+  elements.canvas.height = frameHeight;
+  elements.preview.width = frameWidth;
+  elements.preview.height = frameHeight;
+  elements.preview.style.aspectRatio = `${frameWidth} / ${frameHeight}`;
+  elements.preview.parentElement.style.aspectRatio = `${frameWidth} / ${frameHeight}`;
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  previewContext.imageSmoothingEnabled = false;
+}
 
 function setStatus(kind, text) {
   elements.status.dataset.kind = kind;
@@ -45,6 +61,7 @@ function openSocket() {
     candidate.addEventListener('error', () => reject(new Error('Could not connect to the streaming server')), { once: true });
     candidate.addEventListener('message', (event) => {
       const message = JSON.parse(event.data);
+      configureMatrix(message.matrix ?? message.wled?.matrix);
       if (message.reason === 'wled-not-configured') {
         elements.message.textContent = 'Camera is ready. Configure WLED on the computer to begin output.';
         setStatus('waiting', 'Waiting for WLED');
@@ -67,8 +84,8 @@ function captureFrame(timestamp) {
     const crop = getCoverCrop(
       elements.video.videoWidth,
       elements.video.videoHeight,
-      FRAME_SIZE,
-      FRAME_SIZE,
+      frameWidth,
+      frameHeight,
     );
     context.drawImage(
       elements.video,
@@ -78,14 +95,13 @@ function captureFrame(timestamp) {
       crop.height,
       0,
       0,
-      FRAME_SIZE,
-      FRAME_SIZE,
+      frameWidth,
+      frameHeight,
     );
     previewContext.drawImage(elements.canvas, 0, 0);
 
-    if (socket.bufferedAmount < FRAME_SIZE * FRAME_SIZE * 3 * 2) {
-      const rgba = context.getImageData(0, 0, FRAME_SIZE, FRAME_SIZE).data;
-      socket.send(rgbaToRgb(rgba));
+    if (socket.bufferedAmount < frameWidth * frameHeight * 3 * 2) {
+      socket.send(canvasToRgb(context, frameWidth, frameHeight));
       sentFrames += 1;
       elements.frames.textContent = sentFrames.toLocaleString();
       if (sentFrames > 1) setStatus('live', 'Streaming');
@@ -116,7 +132,7 @@ async function startCamera() {
 
   elements.start.textContent = 'Stop camera';
   elements.flip.disabled = false;
-  elements.message.textContent = 'Live frames are center-cropped to a square — never stretched.';
+  elements.message.textContent = `Live frames are center-cropped to WLED's ${frameWidth}×${frameHeight} aspect ratio — never stretched.`;
   setStatus('live', 'Streaming');
   if ('wakeLock' in navigator) {
     try { wakeLock = await navigator.wakeLock.request('screen'); } catch { /* optional */ }
@@ -162,7 +178,11 @@ elements.flip.addEventListener('click', async () => {
   stopCamera();
   elements.start.disabled = true;
   try { await startCamera(); }
-  catch (error) { elements.message.textContent = error.message; }
+  catch (error) {
+    stopCamera();
+    elements.message.textContent = error.message;
+    setStatus('error', 'Camera unavailable');
+  }
   finally { elements.start.disabled = false; }
 });
 

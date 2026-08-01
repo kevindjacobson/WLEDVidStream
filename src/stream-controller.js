@@ -1,5 +1,3 @@
-import { DDP_FRAME_BYTES } from './ddp.js';
-
 export class StreamController {
   #sender;
   #wled = null;
@@ -26,19 +24,29 @@ export class StreamController {
   }
 
   handleFrame(frame) {
-    if (frame.length !== DDP_FRAME_BYTES) {
-      return { accepted: false, reason: `frame-must-be-${DDP_FRAME_BYTES}-bytes` };
-    }
     if (!this.#wled) {
       return { accepted: false, reason: 'wled-not-configured' };
     }
+    const expectedFrameBytes = this.#wled.matrix.pixelCount * 3;
+    if (frame.length !== expectedFrameBytes) {
+      return {
+        accepted: false,
+        reason: `frame-must-be-${expectedFrameBytes}-bytes`,
+        expectedFrameBytes,
+        matrix: { ...this.#wled.matrix },
+      };
+    }
 
     try {
-      this.#sender.send(frame, this.#wled.host);
+      this.#sender.send(frame, this.#wled.address ?? this.#wled.host);
       this.#framesSent += 1;
       this.#lastFrameAt = new Date().toISOString();
       this.#lastError = null;
-      return { accepted: true, frameNumber: this.#framesSent };
+      return {
+        accepted: true,
+        frameNumber: this.#framesSent,
+        matrix: { ...this.#wled.matrix },
+      };
     } catch (error) {
       this.setError(error);
       return { accepted: false, reason: 'ddp-send-failed' };

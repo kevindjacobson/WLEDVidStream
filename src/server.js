@@ -9,9 +9,10 @@ import { WebSocket, WebSocketServer } from 'ws';
 
 import { createRequestHandler } from './app.js';
 import { loadOrCreateCertificate } from './certificate.js';
-import { DDP_FRAME_BYTES, DdpSender } from './ddp.js';
+import { DdpSender } from './ddp.js';
 import { getLanIpv4Addresses } from './network.js';
 import { StreamController } from './stream-controller.js';
+import { createUpgradeHandler } from './websocket.js';
 
 const projectDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number.parseInt(process.env.PORT ?? '8787', 10);
@@ -32,8 +33,9 @@ if (lanAddresses.length === 0) {
 
 const pairingToken = process.env.PAIR_TOKEN ?? crypto.randomBytes(18).toString('base64url');
 const certificate = await loadOrCreateCertificate(path.join(projectDirectory, '.cert'), lanAddresses);
-const sender = new DdpSender();
-const controller = new StreamController({ sender });
+let controller;
+const sender = new DdpSender({ onError: (error) => controller?.setError(error) });
+controller = new StreamController({ sender });
 const handler = createRequestHandler({
   pairingToken,
   lanAddresses,
@@ -43,27 +45,10 @@ const handler = createRequestHandler({
 });
 const server = https.createServer({ key: certificate.key, cert: certificate.cert }, handler);
 const dashboardServer = http.createServer(handler);
-const sockets = new WebSocketServer({ noServer: true, maxPayload: DDP_FRAME_BYTES });
+const sockets = new WebSocketServer({ noServer: true, maxPayload: 3_000_000 });
 let activePhone = null;
 
-server.on('upgrade', (request, socket, head) => {
-  const url = new URL(request.url, `https://${request.headers.host ?? 'localhost'}`);
-  const suppliedToken = Buffer.from(url.searchParams.get('token') ?? '');
-  const expectedToken = Buffer.from(pairingToken);
-  const authorized = url.pathname === '/stream'
-    && suppliedToken.length === expectedToken.length
-    && crypto.timingSafeEqual(suppliedToken, expectedToken);
-
-  if (!authorized) {
-    socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n');
-    socket.destroy();
-    return;
-  }
-
-  sockets.handleUpgrade(request, socket, head, (webSocket) => {
-    sockets.emit('connection', webSocket);
-  });
-});
+server.on('upgrade', createUpgradeHandler({ pairingToken, sockets }));
 
 sockets.on('connection', (phone) => {
   if (activePhone && activePhone.readyState === WebSocket.OPEN) {
@@ -71,7 +56,7 @@ sockets.on('connection', (phone) => {
   }
   activePhone = phone;
   controller.setPhoneConnected(true);
-  phone.send(JSON.stringify({ type: 'connected', frameBytes: DDP_FRAME_BYTES }));
+  phone.send(JSON.stringify({ type: 'connected', wled: controller.status().wled }));
 
   phone.on('message', (data, isBinary) => {
     if (!isBinary) return;

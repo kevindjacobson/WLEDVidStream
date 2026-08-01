@@ -38,3 +38,7 @@ export function rgbaToRgb(rgba) {
   }
   return rgb;
 }
+
+export function canvasToRgb(context, width, height) {
+  return rgbaToRgb(context.getImageData(0, 0, width, height).data);
+}

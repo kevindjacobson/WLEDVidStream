@@ -1,6 +1,6 @@
 # WLED Video Stream
 
-Stream a phone camera to a 64×64 WLED matrix. The app displays a pairing QR code on your computer; scanning it opens a local camera page on your phone. Frames are center-cropped to a square, reduced to 64×64 RGB pixels, sent to the computer over a paired WebSocket, and forwarded to WLED with DDP over UDP.
+Stream a phone camera to any 2D matrix configured in WLED or WLED MoonModules. The app displays a pairing QR code on your computer; scanning it opens a local camera page on your phone. It reads the logical matrix width and height from WLED, center-crops video to that aspect ratio, reduces it to the exact matrix resolution, and forwards RGB frames with DDP over UDP.
 
 The stream stays on your LAN. No cloud service, account, microphone access, or video recording is involved.
 
@@ -8,10 +8,10 @@ The stream stays on your LAN. No cloud service, account, microphone access, or v
 
 - Node.js 20 or newer
 - A phone and computer on the same Wi-Fi network
-- WLED on the same network, configured for a 64×64 (4,096 pixel) 2D matrix
+- WLED or WLED MoonModules on the same network, configured for a 2D matrix
 - WLED's normal DDP listener on UDP port 4048
 
-Configure panel orientation and serpentine wiring in WLED's **Config → 2D Configuration** page. WLED applies that logical-to-physical matrix mapping when it renders the incoming row-major frame.
+Configure matrix dimensions, panel orientation, serpentine wiring, gaps, and rotation in WLED's **Config → 2D Configuration** page. The app gets the logical width and height from WLED's `/json/info`; WLED then applies its own logical-to-physical mapping when it renders the incoming row-major frame. The app does not assume HUB75, 64×64, or any physical wiring layout.
 
 ## Run
 
@@ -54,8 +54,8 @@ npm test
 npm run check
 ```
 
-Automated tests cover the centered cover-crop calculation, RGBA-to-RGB conversion, exact 64×64 frame validation, WLED inspection, pairing route protection, and WLED-compatible DDP packet headers and chunking.
+Automated tests cover aspect-preserving cover crops, RGBA-to-RGB conversion, WLED-reported dynamic frame sizes, WLED inspection, pairing route protection, and WLED-compatible DDP packet headers and chunking.
 
 ## Hardware note
 
-A 64×64 matrix can draw substantial current. Use a correctly sized external supply, appropriate fusing and power injection, common ground, and a conservative WLED current limit. Do not power a 4,096-pixel matrix from the controller board or a computer USB port.
+Large matrices can draw substantial current. Use a correctly sized external supply, appropriate fusing and power injection, common ground, and a conservative WLED current limit. Do not power a large matrix from the controller board or a computer USB port.

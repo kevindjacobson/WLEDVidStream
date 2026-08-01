@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Stream a phone camera to a 64x64 WLED matrix over DDP.",
+  "description": "Stream a phone camera to any WLED 2D matrix over DDP.",
   "engines": {
     "node": ">=20"
   },
