@@ -26,8 +26,8 @@ let facingMode = 'environment';
 let sentFrames = 0;
 let lastSentAt = 0;
 let wakeLock = null;
-let frameWidth = 64;
-let frameHeight = 64;
+let frameWidth = 1;
+let frameHeight = 1;
 
 function configureMatrix(matrix) {
   if (!matrix?.width || !matrix?.height) return;

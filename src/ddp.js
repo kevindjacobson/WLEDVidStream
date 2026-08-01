@@ -67,5 +67,3 @@ export class DdpSender {
     }
   }
 }
-
-export const DDP_FRAME_BYTES = 64 * 64 * 3;

@@ -73,7 +73,7 @@ async function configureWled(host, announce = true) {
   localStorage.setItem('wled-host', result.host);
   elements.host.value = result.host;
   elements.result.className = 'form-note success';
-  elements.result.textContent = `Connected to ${result.name} · ${result.matrix.width}×${result.matrix.height} logical matrix · ${result.ledCount.toLocaleString()} physical LEDs · WLED ${result.version}`;
+  elements.result.textContent = `Connected to ${result.name} · ${result.matrix.width}×${result.matrix.height} logical matrix · LED maps respected · WLED ${result.version}`;
   if (announce) setChip('ready', 'WLED connected — scan QR');
 }
 

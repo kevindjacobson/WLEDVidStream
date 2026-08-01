@@ -22,28 +22,27 @@ export async function inspectWled(input, {
   } catch (error) {
     throw new Error(`WLED host ${host} resolved outside the private local network`, { cause: error });
   }
-  let response;
-
-  try {
-    response = await fetchImpl(`http://${address}/json/info`, {
-      signal: AbortSignal.timeout(timeoutMs),
-      headers: { accept: 'application/json' },
-    });
-  } catch (error) {
-    throw new Error(`Could not reach WLED at ${host}: ${error.message}`, { cause: error });
+  async function fetchJson(path) {
+    let response;
+    try {
+      response = await fetchImpl(`http://${address}${path}`, {
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: { accept: 'application/json' },
+      });
+    } catch (error) {
+      throw new Error(`Could not reach WLED at ${host}: ${error.message}`, { cause: error });
+    }
+    if (!response.ok) {
+      throw new Error(`WLED at ${host} returned HTTP ${response.status ?? 'error'} for ${path}`);
+    }
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error(`WLED at ${host} returned invalid JSON for ${path}`, { cause: error });
+    }
   }
 
-  if (!response.ok) {
-    throw new Error(`WLED at ${host} returned HTTP ${response.status ?? 'error'}`);
-  }
-
-  let info;
-  try {
-    info = await response.json();
-  } catch (error) {
-    throw new Error(`WLED at ${host} returned invalid JSON`, { cause: error });
-  }
-
+  const info = await fetchJson('/json/info');
   if (typeof info?.ver !== 'string' || typeof info?.name !== 'string') {
     throw new Error(`Device at ${host} did not identify itself as WLED`);
   }
@@ -58,6 +57,12 @@ export async function inspectWled(input, {
   if (!Number.isSafeInteger(pixelCount) || pixelCount > 1_000_000) {
     throw new Error(`WLED at ${host} reports unsupported matrix dimensions ${width}x${height}`);
   }
+  const config = await fetchJson('/json/cfg');
+  if (config?.if?.live?.rlm !== true) {
+    throw new Error(
+      'Enable “Respect LED maps” in WLED Config → Sync Interfaces → Realtime before streaming',
+    );
+  }
   return {
     host,
     address,
@@ -65,5 +70,6 @@ export async function inspectWled(input, {
     version: info.ver,
     ledCount,
     matrix: { width, height, pixelCount },
+    respectsLedMaps: true,
   };
 }

@@ -11,7 +11,7 @@ The stream stays on your LAN. No cloud service, account, microphone access, or v
 - WLED or WLED MoonModules on the same network, configured for a 2D matrix
 - WLED's normal DDP listener on UDP port 4048
 
-Configure matrix dimensions, panel orientation, serpentine wiring, gaps, and rotation in WLED's **Config → 2D Configuration** page. The app gets the logical width and height from WLED's `/json/info`; WLED then applies its own logical-to-physical mapping when it renders the incoming row-major frame. The app does not assume HUB75, 64×64, or any physical wiring layout.
+Configure matrix dimensions, panel orientation, serpentine wiring, gaps, and rotation in WLED's **Config → 2D Configuration** page. Also enable **Respect LED maps** under **Config → Sync Interfaces → Realtime**. The app reads the logical width and height from `/json/info` and verifies the live-data map setting through `/json/cfg`; WLED then applies its logical-to-physical mapping to the incoming row-major frame. The app does not assume HUB75, 64×64, or any physical wiring layout.
 
 ## Run
 

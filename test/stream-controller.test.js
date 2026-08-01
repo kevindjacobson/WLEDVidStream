@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { DDP_FRAME_BYTES } from '../src/ddp.js';
 import { StreamController } from '../src/stream-controller.js';
 
 test('forwards the exact RGB frame size reported by WLED only after configuration', () => {
@@ -10,7 +9,7 @@ test('forwards the exact RGB frame size reported by WLED only after configuratio
     sender: { send: (frame, host) => sent.push({ frame, host }) },
   });
 
-  assert.deepEqual(controller.handleFrame(Buffer.alloc(DDP_FRAME_BYTES)), {
+  assert.deepEqual(controller.handleFrame(Buffer.alloc(12)), {
     accepted: false,
     reason: 'wled-not-configured',
   });

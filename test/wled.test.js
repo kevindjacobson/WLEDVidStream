@@ -6,6 +6,9 @@ import { inspectWled } from '../src/wled.js';
 test('verifies a WLED target and returns useful matrix details', async () => {
   const result = await inspectWled('192.168.1.42', {
     fetchImpl: async (url) => {
+      if (url.endsWith('/json/cfg')) {
+        return { ok: true, json: async () => ({ if: { live: { rlm: true } } }) };
+      }
       assert.equal(url, 'http://192.168.1.42/json/info');
       return {
         ok: true,
@@ -25,6 +28,7 @@ test('verifies a WLED target and returns useful matrix details', async () => {
     version: '0.15.0',
     ledCount: 4_096,
     matrix: { width: 64, height: 64, pixelCount: 4_096 },
+    respectsLedMaps: true,
   });
 });
 
@@ -37,6 +41,9 @@ test('resolves a local WLED name once and retains the numeric DDP address', asyn
       return { address: '192.168.1.42', family: 4 };
     },
     fetchImpl: async (url) => {
+      if (url.endsWith('/json/cfg')) {
+        return { ok: true, json: async () => ({ if: { live: { rlm: true } } }) };
+      }
       assert.equal(url, 'http://192.168.1.42/json/info');
       return {
         ok: true,
@@ -53,16 +60,27 @@ test('resolves a local WLED name once and retains the numeric DDP address', asyn
 
 test('accepts the matrix dimensions reported by WLED instead of assuming 64x64', async () => {
   const result = await inspectWled('192.168.1.42', {
-      fetchImpl: async () => ({
+      fetchImpl: async (url) => ({
         ok: true,
-        json: async () => ({
-          name: 'Wide Matrix', ver: '0.15.0', leds: { count: 512, matrix: { w: 32, h: 16 } },
-        }),
+        json: async () => url.endsWith('/json/cfg')
+          ? ({ if: { live: { rlm: true } } })
+          : ({ name: 'Wide Matrix', ver: '0.15.0', leds: { count: 512, matrix: { w: 32, h: 16 } } }),
       }),
     });
 
   assert.deepEqual(result.matrix, { width: 32, height: 16, pixelCount: 512 });
   assert.equal(result.ledCount, 512);
+});
+
+test('rejects a matrix when WLED realtime data is configured to bypass LED maps', async () => {
+  await assert.rejects(inspectWled('192.168.1.42', {
+    fetchImpl: async (url) => ({
+      ok: true,
+      json: async () => url.endsWith('/json/cfg')
+        ? ({ if: { live: { rlm: false } } })
+        : ({ name: 'Matrix', ver: '0.15.0', leds: { count: 512, matrix: { w: 32, h: 16 } } }),
+    }),
+  }), /Respect LED maps/);
 });
 
 test('rejects a WLED target that has no 2D matrix configuration', async () => {
