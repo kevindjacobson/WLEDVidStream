@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0c1011">
+    <title>Phone camera · WLED Video Stream</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script type="module" src="/phone.js"></script>
+  </head>
+  <body class="phone-page">
+    <header class="phone-header">
+      <div class="brand compact">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>WLED <b>Stream</b></span>
+      </div>
+      <div class="status-chip" id="phone-status"><span></span> Ready</div>
+    </header>
+
+    <main class="phone-shell">
+      <section class="camera-card">
+        <div class="camera-preview">
+          <video id="camera" playsinline muted></video>
+          <div class="crop-guides" aria-hidden="true"></div>
+          <div class="preview-label">CENTER CROP</div>
+        </div>
+        <canvas id="pixel-preview" width="64" height="64" aria-label="64 by 64 pixel preview"></canvas>
+        <canvas id="frame-canvas" width="64" height="64" hidden></canvas>
+      </section>
+
+      <section class="phone-controls">
+        <p id="phone-message">Tap Start camera, then allow camera access when prompted.</p>
+        <div class="phone-stats">
+          <span><b id="phone-frames">0</b> frames</span>
+          <label>Rate
+            <select id="frame-rate">
+              <option value="10">10 fps</option>
+              <option value="15" selected>15 fps</option>
+              <option value="20">20 fps</option>
+            </select>
+          </label>
+        </div>
+        <div class="control-row">
+          <button class="button button-secondary" id="flip-camera" type="button" disabled>Flip</button>
+          <button class="button button-primary start-button" id="start-camera" type="button">Start camera</button>
+        </div>
+        <p class="privacy-note">Camera frames travel only to the computer named in the QR code. Audio is never requested.</p>
+      </section>
+
+      <section class="secure-context-help" id="secure-context-help" hidden>
+        <h2>Camera access needs trusted HTTPS</h2>
+        <p>Your browser has not trusted this local connection yet. Return to the certificate warning and choose to continue, or install the local certificate and reopen this page.</p>
+        <a class="button button-secondary" href="/certificate">Install certificate</a>
+      </section>
+    </main>
+  </body>
+</html>

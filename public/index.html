@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WLED Video Stream</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script type="module" src="/dashboard.js"></script>
+  </head>
+  <body class="dashboard-page">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="WLED Video Stream home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>WLED <b>Video Stream</b></span>
+      </a>
+      <div class="status-chip" id="overall-status"><span></span> Waiting for setup</div>
+    </header>
+
+    <main class="dashboard-shell">
+      <section class="hero-panel">
+        <div class="eyebrow">64 × 64 LIVE CAMERA</div>
+        <h1>Point your phone.<br><em>Light the matrix.</em></h1>
+        <p class="lede">Your video stays on your local network. Frames are center-cropped, downsampled to 4,096 pixels, and streamed directly to WLED over DDP.</p>
+
+        <form id="wled-form" class="wled-form">
+          <label for="wled-host">WLED address</label>
+          <div class="input-row">
+            <input id="wled-host" name="host" autocomplete="off" placeholder="e.g. 192.168.1.42 or wled.local" required>
+            <button class="button button-primary" type="submit">Connect WLED</button>
+          </div>
+          <p class="form-note" id="wled-result">Enter the address shown in your WLED app or web interface.</p>
+        </form>
+
+        <div class="signal-row" aria-label="Connection path">
+          <div><span class="signal-dot" id="phone-dot"></span><b>Phone</b><small id="phone-label">Not paired</small></div>
+          <span class="signal-line"></span>
+          <div><span class="signal-dot" id="server-dot"></span><b>This Mac</b><small>Ready</small></div>
+          <span class="signal-line"></span>
+          <div><span class="signal-dot" id="wled-dot"></span><b>WLED</b><small id="wled-label">Not configured</small></div>
+        </div>
+      </section>
+
+      <section class="pair-panel">
+        <div class="pair-heading">
+          <div>
+            <span class="step-number">02</span>
+            <h2>Scan to pair</h2>
+          </div>
+          <select id="network-address" aria-label="Network address"></select>
+        </div>
+
+        <div class="qr-frame">
+          <div class="corner corner-a"></div><div class="corner corner-b"></div>
+          <div class="corner corner-c"></div><div class="corner corner-d"></div>
+          <img id="pair-qr" alt="Pairing QR code">
+        </div>
+        <p class="scan-copy">Open your phone camera and scan this code. Both devices must be on the same Wi-Fi.</p>
+
+        <div class="live-metrics">
+          <div><span id="frame-count">0</span><small>frames sent</small></div>
+          <div><span>64²</span><small>RGB pixels</small></div>
+          <div><span>DDP</span><small>local UDP</small></div>
+        </div>
+
+        <details class="certificate-help">
+          <summary>Phone shows a certificate warning?</summary>
+          <p>This local app uses a private HTTPS certificate so your browser can grant camera access. On the warning screen, choose <b>Show Details</b>, then <b>visit this website</b>. No traffic leaves your network.</p>
+          <a href="/certificate" download>Download certificate</a>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      <span>Local-only stream</span>
+      <span>•</span>
+      <span>Centered crop — never stretched</span>
+    </footer>
+  </body>
+</html>
