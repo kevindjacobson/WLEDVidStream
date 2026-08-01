@@ -29,6 +29,7 @@ test('verifies a WLED target and returns useful matrix details', async () => {
     ledCount: 4_096,
     matrix: { width: 64, height: 64, pixelCount: 4_096 },
     respectsLedMaps: true,
+    mappingMode: 'config-enabled',
   });
 });
 
@@ -81,6 +82,20 @@ test('rejects a matrix when WLED realtime data is configured to bypass LED maps'
         : ({ name: 'Matrix', ver: '0.15.0', leds: { count: 512, matrix: { w: 32, h: 16 } } }),
     }),
   }), /Respect LED maps/);
+});
+
+test('accepts legacy MoonModules firmware where realtime mapping is always applied', async () => {
+  const result = await inspectWled('192.168.1.42', {
+    fetchImpl: async (url) => ({
+      ok: true,
+      json: async () => url.endsWith('/json/cfg')
+        ? ({ if: { live: { mso: false } } })
+        : ({ name: 'WLED', ver: '14.7.1', leds: { count: 4_096, matrix: { w: 64, h: 64 } } }),
+    }),
+  });
+
+  assert.equal(result.respectsLedMaps, null);
+  assert.equal(result.mappingMode, 'legacy-always');
 });
 
 test('rejects a WLED target that has no 2D matrix configuration', async () => {

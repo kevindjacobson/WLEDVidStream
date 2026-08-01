@@ -58,7 +58,8 @@ export async function inspectWled(input, {
     throw new Error(`WLED at ${host} reports unsupported matrix dimensions ${width}x${height}`);
   }
   const config = await fetchJson('/json/cfg');
-  if (config?.if?.live?.rlm !== true) {
+  const respectsLedMaps = config?.if?.live?.rlm;
+  if (respectsLedMaps === false) {
     throw new Error(
       'Enable “Respect LED maps” in WLED Config → Sync Interfaces → Realtime before streaming',
     );
@@ -70,6 +71,7 @@ export async function inspectWled(input, {
     version: info.ver,
     ledCount,
     matrix: { width, height, pixelCount },
-    respectsLedMaps: true,
+    respectsLedMaps: respectsLedMaps === true ? true : null,
+    mappingMode: respectsLedMaps === true ? 'config-enabled' : 'legacy-always',
   };
 }
