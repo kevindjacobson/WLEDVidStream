@@ -32,6 +32,7 @@
         <p id="phone-message">Tap Start camera, then allow camera access when prompted.</p>
         <div class="phone-stats">
           <span><b id="phone-frames">0</b> frames</span>
+          <span id="loop-summary">Live</span>
           <label>Rate
             <select id="frame-rate">
               <option value="10">10 fps</option>
@@ -44,6 +45,7 @@
           <button class="button button-secondary" id="flip-camera" type="button" disabled>Flip</button>
           <button class="button button-primary start-button" id="start-camera" type="button">Start camera</button>
         </div>
+        <button class="button loop-button" id="loop-control" type="button" disabled>Record loop</button>
         <p class="privacy-note">Camera frames travel only to the computer named in the QR code. Audio is never requested.</p>
       </section>
 

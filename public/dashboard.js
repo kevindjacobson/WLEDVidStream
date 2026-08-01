@@ -28,7 +28,10 @@ function renderStatus(status) {
     ? `${status.wled.matrix.width}×${status.wled.matrix.height}`
     : '—';
 
+  const loopSeconds = ((status.loop?.durationMs ?? 0) / 1_000).toFixed(1);
   if (status.lastError) setChip('error', status.lastError);
+  else if (status.loop?.mode === 'playing') setChip('live', `Looping ${loopSeconds}s segment`);
+  else if (status.loop?.mode === 'recording') setChip('live', `Recording loop · ${loopSeconds}s`);
   else if (status.phoneConnected && status.wled) setChip('live', 'Streaming live');
   else if (status.wled) setChip('ready', 'Scan the QR code');
   else setChip('waiting', 'Connect your WLED');

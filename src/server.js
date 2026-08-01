@@ -12,7 +12,7 @@ import { loadOrCreateCertificate } from './certificate.js';
 import { DdpSender } from './ddp.js';
 import { getLanIpv4Addresses } from './network.js';
 import { StreamController } from './stream-controller.js';
-import { createUpgradeHandler } from './websocket.js';
+import { createUpgradeHandler, processPhoneMessage } from './websocket.js';
 
 const projectDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number.parseInt(process.env.PORT ?? '8787', 10);
@@ -56,13 +56,13 @@ sockets.on('connection', (phone) => {
   }
   activePhone = phone;
   controller.setPhoneConnected(true);
-  phone.send(JSON.stringify({ type: 'connected', wled: controller.status().wled }));
+  const status = controller.status();
+  phone.send(JSON.stringify({ type: 'connected', wled: status.wled, loop: status.loop }));
 
   phone.on('message', (data, isBinary) => {
-    if (!isBinary) return;
-    const result = controller.handleFrame(data);
-    if (!result.accepted || result.frameNumber % 15 === 0) {
-      phone.send(JSON.stringify({ type: 'frame-status', ...result }));
+    const result = processPhoneMessage({ data, isBinary, controller });
+    if (!isBinary || !result.accepted || result.frameNumber % 15 === 0) {
+      phone.send(JSON.stringify(result));
     }
   });
 
@@ -71,6 +71,7 @@ sockets.on('connection', (phone) => {
     if (activePhone === phone) {
       activePhone = null;
       controller.setPhoneConnected(false);
+      controller.playLoop();
     }
   });
 });
@@ -92,7 +93,10 @@ server.listen(port, '0.0.0.0', () => {
 function shutDown() {
   for (const client of sockets.clients) client.close(1001, 'Server shutting down');
   dashboardServer.close();
-  server.close(() => sender.close());
+  server.close(() => {
+    controller.close();
+    sender.close();
+  });
 }
 
 process.on('SIGINT', shutDown);

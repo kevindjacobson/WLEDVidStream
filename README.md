@@ -2,7 +2,7 @@
 
 Stream a phone camera to any 2D matrix configured in WLED or WLED MoonModules. The app displays a pairing QR code on your computer; scanning it opens a local camera page on your phone. It reads the logical matrix width and height from WLED, center-crops video to that aspect ratio, reduces it to the exact matrix resolution, applies a dark, high-contrast color grade, and forwards RGB frames with DDP over UDP.
 
-The stream stays on your LAN. No cloud service, account, microphone access, or video recording is involved.
+The stream stays on your LAN. No cloud service, account, microphone access, upload, or disk recording is involved. Captured loops live only in temporary server memory.
 
 ## Requirements
 
@@ -27,6 +27,8 @@ Then:
 3. Scan the dashboard QR code with the phone.
 4. Accept the phone's local certificate warning. HTTPS is required for camera access.
 5. Tap **Start camera** and grant camera permission.
+
+Tap **Record loop** to capture the cropped, color-graded frames in server memory, then tap **Finish loop** to replay the segment continuously. The loop keeps running if the phone disconnects. Reconnect and tap **Stop loop** to return to the live camera. Captures are limited to 20 seconds and 64 MiB, are never written to disk, and disappear when stopped or when the server exits.
 
 The dashboard saves the WLED address in that browser's local storage. A new random phone pairing token is generated each time the server starts.
 
