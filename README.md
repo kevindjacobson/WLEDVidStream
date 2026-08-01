@@ -28,7 +28,7 @@ Then:
 4. Accept the phone's local certificate warning. HTTPS is required for camera access.
 5. Tap **Start camera** and grant camera permission.
 
-Tap **Record loop** to capture the cropped, color-graded frames in server memory, then tap **Finish loop** to replay the segment continuously. The loop keeps running if the phone disconnects. Reconnect and tap **Stop loop** to return to the live camera. Captures are limited to 20 seconds and 64 MiB, are never written to disk, and disappear when stopped or when the server exits.
+Choose **Loop** or **Boomerang**, then tap the record button to capture the cropped, color-graded frames in server memory. A normal loop repeats from the beginning; a boomerang runs forward and backward without duplicating its endpoint frames. Finish the capture to begin replay. Playback keeps running if the phone disconnects; reconnect and tap Stop to return to the live camera. Captures are limited to 20 seconds and 64 MiB, are never written to disk, and disappear when stopped or when the server exits.
 
 The dashboard saves the WLED address in that browser's local storage. A new random phone pairing token is generated each time the server starts.
 

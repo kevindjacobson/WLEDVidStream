@@ -45,7 +45,15 @@
           <button class="button button-secondary" id="flip-camera" type="button" disabled>Flip</button>
           <button class="button button-primary start-button" id="start-camera" type="button">Start camera</button>
         </div>
-        <button class="button loop-button" id="loop-control" type="button" disabled>Record loop</button>
+        <div class="loop-row">
+          <label>Playback
+            <select id="playback-mode">
+              <option value="loop">Loop</option>
+              <option value="boomerang">Boomerang</option>
+            </select>
+          </label>
+          <button class="button loop-button" id="loop-control" type="button" disabled>Record loop</button>
+        </div>
         <p class="privacy-note">Camera frames travel only to the computer named in the QR code. Audio is never requested.</p>
       </section>
 

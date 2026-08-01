@@ -39,7 +39,9 @@ export function processPhoneMessage({ data, isBinary, controller }) {
     if (message?.type !== 'loop-control') throw new Error('Unknown control message');
 
     let result;
-    if (message.action === 'record') result = controller.startLoopRecording(message.fps);
+    if (message.action === 'record') {
+      result = controller.startLoopRecording(message.fps, message.boomerang ?? false);
+    }
     else if (message.action === 'play') result = controller.playLoop();
     else if (message.action === 'stop') result = controller.stopLoop();
     else throw new Error('Unknown loop action');

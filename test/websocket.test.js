@@ -52,7 +52,9 @@ test('processes loop recording controls over the paired phone session', () => {
   assert.equal(typeof websocket.processPhoneMessage, 'function');
 
   const recording = websocket.processPhoneMessage({
-    data: Buffer.from(JSON.stringify({ type: 'loop-control', action: 'record', fps: 10 })),
+    data: Buffer.from(JSON.stringify({
+      type: 'loop-control', action: 'record', fps: 10, boomerang: true,
+    })),
     isBinary: false,
     controller,
   });
@@ -71,6 +73,7 @@ test('processes loop recording controls over the paired phone session', () => {
   assert.equal(recording.type, 'loop-status');
   assert.equal(recording.accepted, true);
   assert.equal(recording.loop.mode, 'recording');
+  assert.equal(recording.loop.boomerang, true);
   assert.equal(playing.loop.mode, 'playing');
   assert.equal(playing.loop.frameCount, 1);
   assert.equal(stopped.loop.mode, 'idle');

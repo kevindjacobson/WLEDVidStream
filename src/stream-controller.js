@@ -14,6 +14,8 @@ export class StreamController {
   #loopBytes = 0;
   #loopFps = null;
   #loopFrameIndex = 0;
+  #loopDirection = 1;
+  #loopBoomerang = false;
   #loopTimer = null;
   #closed = false;
 
@@ -50,6 +52,7 @@ export class StreamController {
       mode: this.#loopMode,
       frameCount: this.#loopFrames.length,
       fps: this.#loopFps,
+      boomerang: this.#loopBoomerang,
       durationMs: this.#loopFps
         ? Math.round((this.#loopFrames.length / this.#loopFps) * 1_000)
         : 0,
@@ -70,7 +73,7 @@ export class StreamController {
     this.#lastError = null;
   }
 
-  startLoopRecording(fps) {
+  startLoopRecording(fps, boomerang = false) {
     if (this.#closed) {
       return { accepted: false, reason: 'controller-closed', loop: this.#loopStatus() };
     }
@@ -80,6 +83,9 @@ export class StreamController {
     if (!Number.isInteger(fps) || fps < 1 || fps > 30) {
       return { accepted: false, reason: 'loop-fps-must-be-1-to-30', loop: this.#loopStatus() };
     }
+    if (typeof boomerang !== 'boolean') {
+      return { accepted: false, reason: 'boomerang-must-be-boolean', loop: this.#loopStatus() };
+    }
 
     this.#clearLoopTimer();
     this.#loopMode = 'recording';
@@ -87,6 +93,8 @@ export class StreamController {
     this.#loopBytes = 0;
     this.#loopFps = fps;
     this.#loopFrameIndex = 0;
+    this.#loopDirection = 1;
+    this.#loopBoomerang = boomerang;
     return { accepted: true, loop: this.#loopStatus() };
   }
 
@@ -100,10 +108,23 @@ export class StreamController {
 
     this.#loopMode = 'playing';
     this.#loopFrameIndex = 0;
+    this.#loopDirection = 1;
     this.#clearLoopTimer();
     this.#loopTimer = this.#setInterval(() => {
       const frame = this.#loopFrames[this.#loopFrameIndex];
-      this.#loopFrameIndex = (this.#loopFrameIndex + 1) % this.#loopFrames.length;
+      if (this.#loopBoomerang && this.#loopFrames.length > 1) {
+        let nextIndex = this.#loopFrameIndex + this.#loopDirection;
+        if (nextIndex >= this.#loopFrames.length) {
+          this.#loopDirection = -1;
+          nextIndex = this.#loopFrames.length - 2;
+        } else if (nextIndex < 0) {
+          this.#loopDirection = 1;
+          nextIndex = 1;
+        }
+        this.#loopFrameIndex = nextIndex;
+      } else {
+        this.#loopFrameIndex = (this.#loopFrameIndex + 1) % this.#loopFrames.length;
+      }
       try {
         this.#transmit(frame);
       } catch (error) {
@@ -120,6 +141,8 @@ export class StreamController {
     this.#loopBytes = 0;
     this.#loopFps = null;
     this.#loopFrameIndex = 0;
+    this.#loopDirection = 1;
+    this.#loopBoomerang = false;
     return { accepted: true, loop: this.#loopStatus() };
   }
 

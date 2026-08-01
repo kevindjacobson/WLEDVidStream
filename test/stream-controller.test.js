@@ -164,3 +164,62 @@ test('cannot restart loop playback after the controller closes', () => {
   assert.equal(result.loop.mode, 'idle');
   assert.equal(scheduled, 0);
 });
+
+test('boomerang playback reverses at each endpoint without duplicating it', () => {
+  const sent = [];
+  let tick = null;
+  const controller = new StreamController({
+    sender: { send: (frame) => sent.push(frame[0]) },
+    setIntervalImpl: (callback) => {
+      tick = callback;
+      return 42;
+    },
+    clearIntervalImpl: () => {},
+  });
+  controller.setWled({
+    host: '192.168.1.42',
+    matrix: { width: 2, height: 1, pixelCount: 2 },
+  });
+  controller.startLoopRecording(10, true);
+  controller.handleFrame(Buffer.alloc(6, 1));
+  controller.handleFrame(Buffer.alloc(6, 2));
+  controller.handleFrame(Buffer.alloc(6, 3));
+
+  const playback = controller.playLoop();
+  for (let index = 0; index < 8; index += 1) tick();
+
+  assert.equal(playback.loop.boomerang, true);
+  assert.deepEqual(sent, [1, 2, 3, 1, 2, 3, 2, 1, 2, 3, 2]);
+});
+
+test('boomerang playback handles one-frame and two-frame clips', async (testContext) => {
+  const cases = [
+    { frames: [7], expected: [7, 7, 7, 7, 7] },
+    { frames: [7, 8], expected: [7, 8, 7, 8, 7, 8] },
+  ];
+
+  for (const { frames, expected } of cases) {
+    await testContext.test(`${frames.length} frame clip`, () => {
+      const sent = [];
+      let tick = null;
+      const controller = new StreamController({
+        sender: { send: (frame) => sent.push(frame[0]) },
+        setIntervalImpl: (callback) => {
+          tick = callback;
+          return 42;
+        },
+        clearIntervalImpl: () => {},
+      });
+      controller.setWled({
+        host: '192.168.1.42',
+        matrix: { width: 2, height: 1, pixelCount: 2 },
+      });
+      controller.startLoopRecording(10, true);
+      for (const value of frames) controller.handleFrame(Buffer.alloc(6, value));
+      controller.playLoop();
+      for (let index = 0; index < 4; index += 1) tick();
+
+      assert.deepEqual(sent, expected);
+    });
+  }
+});

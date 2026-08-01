@@ -9,6 +9,7 @@ const elements = {
   flip: document.querySelector('#flip-camera'),
   loop: document.querySelector('#loop-control'),
   loopSummary: document.querySelector('#loop-summary'),
+  playback: document.querySelector('#playback-mode'),
   rate: document.querySelector('#frame-rate'),
   frames: document.querySelector('#phone-frames'),
   status: document.querySelector('#phone-status'),
@@ -30,7 +31,9 @@ let lastSentAt = 0;
 let wakeLock = null;
 let frameWidth = 1;
 let frameHeight = 1;
-let loopState = { mode: 'idle', frameCount: 0, durationMs: 0, maxDurationSeconds: 20 };
+let loopState = {
+  mode: 'idle', frameCount: 0, durationMs: 0, maxDurationSeconds: 20, boomerang: false,
+};
 
 function configureMatrix(matrix) {
   if (!matrix?.width || !matrix?.height) return;
@@ -56,28 +59,33 @@ function renderLoopStatus(loop, announce = true) {
   if (!loop) return;
   loopState = loop;
   const seconds = (loop.durationMs / 1_000).toFixed(1);
+  const playbackName = loop.boomerang ? 'boomerang' : 'loop';
   elements.loop.dataset.mode = loop.mode;
   elements.rate.disabled = loop.mode !== 'idle';
+  elements.playback.disabled = loop.mode !== 'idle';
+  elements.playback.value = playbackName;
   elements.flip.disabled = !stream || loop.mode === 'recording';
   elements.loop.disabled = socket?.readyState !== WebSocket.OPEN
     || (!stream && loop.mode !== 'playing');
 
   if (loop.mode === 'recording') {
-    elements.loop.textContent = 'Finish loop';
-    elements.loopSummary.textContent = `REC ${seconds}s`;
+    elements.loop.textContent = loop.boomerang ? 'Finish boomerang' : 'Finish loop';
+    elements.loopSummary.textContent = `${loop.boomerang ? 'REC ↔' : 'REC'} ${seconds}s`;
     if (announce) {
       elements.message.textContent = `Recording processed frames · ${seconds}s of ${loop.maxDurationSeconds}s maximum.`;
       setStatus('live', 'Recording loop');
     }
   } else if (loop.mode === 'playing') {
-    elements.loop.textContent = 'Stop loop';
-    elements.loopSummary.textContent = `Loop ${seconds}s`;
+    elements.loop.textContent = loop.boomerang ? 'Stop boomerang' : 'Stop loop';
+    elements.loopSummary.textContent = `${loop.boomerang ? 'Boomerang' : 'Loop'} ${seconds}s`;
     if (announce) {
-      elements.message.textContent = `Looping ${seconds}s from server memory. It will continue if this phone disconnects.`;
-      setStatus('live', 'Looping');
+      elements.message.textContent = `${loop.boomerang ? 'Boomeranging' : 'Looping'} ${seconds}s from server memory. It will continue if this phone disconnects.`;
+      setStatus('live', loop.boomerang ? 'Boomeranging' : 'Looping');
     }
   } else {
-    elements.loop.textContent = 'Record loop';
+    elements.loop.textContent = elements.playback.value === 'boomerang'
+      ? 'Record boomerang'
+      : 'Record loop';
     elements.loopSummary.textContent = 'Live';
     if (stream && announce) {
       elements.message.textContent = `Live frames are center-cropped and given a punchy, darker color grade for WLED's ${frameWidth}×${frameHeight} matrix.`;
@@ -104,8 +112,9 @@ function openSocket() {
         elements.message.textContent = 'Camera is ready. Configure WLED on the computer to begin output.';
         setStatus('waiting', 'Waiting for WLED');
       } else if (message.reason === 'loop-limit-reached') {
-        elements.message.textContent = `Capture limit reached. Looping the saved ${loopState.durationMs / 1_000}s segment.`;
-        setStatus('live', 'Looping');
+        const verb = loopState.boomerang ? 'Boomeranging' : 'Looping';
+        elements.message.textContent = `Capture limit reached. ${verb} the saved ${loopState.durationMs / 1_000}s segment.`;
+        setStatus('live', verb);
       } else if (message.reason === 'loop-has-no-frames') {
         elements.message.textContent = 'Capture at least one frame before finishing the loop.';
       } else if (message.reason === 'invalid-control-message') {
@@ -121,8 +130,9 @@ function openSocket() {
         loopState = { ...loopState, mode: 'playing' };
       }
       if (loopState.mode === 'playing') {
-        elements.message.textContent = 'The captured loop is continuing on the server.';
-        setStatus('live', 'Looping on server');
+        const playbackName = loopState.boomerang ? 'boomerang' : 'loop';
+        elements.message.textContent = `The captured ${playbackName} is continuing on the server.`;
+        setStatus('live', `${loopState.boomerang ? 'Boomeranging' : 'Looping'} on server`);
       } else if (stream) {
         setStatus('error', 'Connection lost');
       }
@@ -168,7 +178,7 @@ function captureFrame(timestamp) {
           frameCount,
           durationMs: Math.round((frameCount / fps) * 1_000),
         };
-        elements.loopSummary.textContent = `REC ${(loopState.durationMs / 1_000).toFixed(1)}s`;
+        elements.loopSummary.textContent = `${loopState.boomerang ? 'REC ↔' : 'REC'} ${(loopState.durationMs / 1_000).toFixed(1)}s`;
       }
       if (sentFrames > 1 && loopState.mode === 'idle') setStatus('live', 'Streaming');
     }
@@ -222,8 +232,9 @@ function stopCamera() {
     loopState = { ...loopState, mode: 'playing' };
   }
   if (loopState.mode === 'playing') {
-    elements.message.textContent = 'Camera stopped. The captured loop is continuing on the server.';
-    setStatus('live', 'Looping on server');
+    const playbackName = loopState.boomerang ? 'boomerang' : 'loop';
+    elements.message.textContent = `Camera stopped. The captured ${playbackName} is continuing on the server.`;
+    setStatus('live', `${loopState.boomerang ? 'Boomeranging' : 'Looping'} on server`);
   } else {
     elements.message.textContent = 'Camera stopped. Tap Start camera to resume.';
     setStatus('ready', 'Ready');
@@ -266,9 +277,19 @@ elements.loop.addEventListener('click', () => {
     ? 'play'
     : loopState.mode === 'playing' ? 'stop' : 'record';
   const message = { type: 'loop-control', action };
-  if (action === 'record') message.fps = Number(elements.rate.value);
+  if (action === 'record') {
+    message.fps = Number(elements.rate.value);
+    message.boomerang = elements.playback.value === 'boomerang';
+  }
   elements.loop.disabled = true;
   socket.send(JSON.stringify(message));
+});
+
+elements.playback.addEventListener('change', () => {
+  if (loopState.mode !== 'idle') return;
+  elements.loop.textContent = elements.playback.value === 'boomerang'
+    ? 'Record boomerang'
+    : 'Record loop';
 });
 
 window.addEventListener('pagehide', stopCamera);
