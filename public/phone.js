@@ -1,4 +1,4 @@
-import { canvasToRgb, getCoverCrop } from './frame.js';
+import { applyPunchyGrade, getCoverCrop, rgbaToRgb } from './frame.js';
 
 const token = new URLSearchParams(location.search).get('token');
 const elements = {
@@ -98,10 +98,13 @@ function captureFrame(timestamp) {
       frameWidth,
       frameHeight,
     );
+    const imageData = context.getImageData(0, 0, frameWidth, frameHeight);
+    applyPunchyGrade(imageData.data);
+    context.putImageData(imageData, 0, 0);
     previewContext.drawImage(elements.canvas, 0, 0);
 
     if (socket.bufferedAmount < frameWidth * frameHeight * 3 * 2) {
-      socket.send(canvasToRgb(context, frameWidth, frameHeight));
+      socket.send(rgbaToRgb(imageData.data));
       sentFrames += 1;
       elements.frames.textContent = sentFrames.toLocaleString();
       if (sentFrames > 1) setStatus('live', 'Streaming');
@@ -132,7 +135,7 @@ async function startCamera() {
 
   elements.start.textContent = 'Stop camera';
   elements.flip.disabled = false;
-  elements.message.textContent = `Live frames are center-cropped to WLED's ${frameWidth}×${frameHeight} aspect ratio — never stretched.`;
+  elements.message.textContent = `Live frames are center-cropped and given a punchy, darker color grade for WLED's ${frameWidth}×${frameHeight} matrix.`;
   setStatus('live', 'Streaming');
   if ('wakeLock' in navigator) {
     try { wakeLock = await navigator.wakeLock.request('screen'); } catch { /* optional */ }

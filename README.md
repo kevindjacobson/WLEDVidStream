@@ -1,6 +1,6 @@
 # WLED Video Stream
 
-Stream a phone camera to any 2D matrix configured in WLED or WLED MoonModules. The app displays a pairing QR code on your computer; scanning it opens a local camera page on your phone. It reads the logical matrix width and height from WLED, center-crops video to that aspect ratio, reduces it to the exact matrix resolution, and forwards RGB frames with DDP over UDP.
+Stream a phone camera to any 2D matrix configured in WLED or WLED MoonModules. The app displays a pairing QR code on your computer; scanning it opens a local camera page on your phone. It reads the logical matrix width and height from WLED, center-crops video to that aspect ratio, reduces it to the exact matrix resolution, applies a dark, high-contrast color grade, and forwards RGB frames with DDP over UDP.
 
 The stream stays on your LAN. No cloud service, account, microphone access, or video recording is involved.
 
